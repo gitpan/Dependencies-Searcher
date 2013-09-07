@@ -3,6 +3,7 @@ abstract: "Search recursively dependencies used in a module's "
 author:
   - 'smonff <smonff@gmail.com>'
 build_requires:
+  IO::File: 0
   Test::More: 0
 configure_requires:
   ExtUtils::MakeMaker: 0
@@ -18,5 +19,9 @@ no_index:
     - t
     - inc
 requires:
-  perl: 5.006
-version: 0.02
+  App::Ack: 0
+  Data::Printer: 0
+  Module::Version: 0
+  Moose: 0
+  Test::More: 0
+version: 0.03
