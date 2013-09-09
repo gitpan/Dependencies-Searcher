@@ -11,8 +11,7 @@ use Moose;
 # Module::Version;
 # App::Ack;
 
-our $VERSION = '0.03_01';
-
+our $VERSION = '0.04';
 
 
 # Init parameters

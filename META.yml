@@ -24,4 +24,4 @@ requires:
   Module::Version: 0
   Moose: 0
   Test::More: 0
-version: 0.03_01
+version: 0.04

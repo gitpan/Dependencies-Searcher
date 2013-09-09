@@ -1,9 +1,9 @@
 Revision history for Dependencies-Searcher
 
-0.03_01    2013-09-09 07:57
+0.04    2013-09-09 17:38:24 
  [FIXES]
- - [RT #88528&] Dependencies::Searcher::Utils have been removed
- try to clean up test failures
+ - [RT #88528] Dependencies::Searcher::Utils have been removed
+   trying to clean up test failures
 
 0.03    2013-09-04 01:45
  [FIXES]
