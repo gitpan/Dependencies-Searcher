@@ -6,12 +6,13 @@ use feature qw(say);
 use Module::CoreList qw();
 use autodie;
 use Moose;
+use IPC::Cmd qw[can_run run];
 
 # These modules will be used throught a system call
 # Module::Version;
 # App::Ack;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05_01';
 
 
 # Init parameters
@@ -66,7 +67,7 @@ sub get_modules {
     } elsif ($flag eq "require") {
 	$request = $self->parameters . " " . $self->requires_pattern . " " . $path;
     } else {
-	die "Pattern flag is required : use or require"
+	die "Pattern flag is required : use or require";
     }
 
     my @moduls = `ack $request`;
