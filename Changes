@@ -1,7 +1,16 @@
 Revision history for Dependencies-Searcher
 
+0.05_02 2013-09-
+ [FIXES]
+ - Make the module more portable by using Cwd to get some dynamic path and avoid relative path problems
+ [EHANCEMENTS]
+ - Make Dependencies::Searcher using Dependencies::Searcher::AckRequester
+ - Build an independant module for the Ack part, that returns an array containing interesting lines
+ - Add a MIN_PERL_VERSION (5.010) in Makefile.PL as recommanded at CPANTS
+
 0.05_01 2013-09-10 23:10
  [EHANCEMENTS]
+ - Test Ack availability in tests
  - Remove tests that asks for a static number of results (non-predictable) 
 
 0.04    2013-09-09 17:38:24 

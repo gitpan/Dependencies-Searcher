@@ -1,5 +1,5 @@
 ---
-abstract: "Search recursively dependencies used in a module's "
+abstract: "Search recursively dependencies used in a module's directory"
 author:
   - 'smonff <smonff@gmail.com>'
 build_requires:
@@ -24,4 +24,5 @@ requires:
   Module::Version: 0
   Moose: 0
   Test::More: 0
-version: 0.05_01
+  perl: 5.010
+version: 0.05_02
