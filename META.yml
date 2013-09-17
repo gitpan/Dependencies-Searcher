@@ -1,9 +1,11 @@
 ---
-abstract: "Search recursively dependencies used in a module's directory"
+abstract: 'Manage your dependencies list in a convenient way'
 author:
   - 'smonff <smonff@gmail.com>'
 build_requires:
+  App::Ack: 0
   IO::File: 0
+  Module::Version: 0
   Test::More: 0
 configure_requires:
   ExtUtils::MakeMaker: 0
@@ -25,4 +27,4 @@ requires:
   Moose: 0
   Test::More: 0
   perl: 5.010
-version: 0.05_02
+version: 0.05_03

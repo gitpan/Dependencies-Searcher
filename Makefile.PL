@@ -17,6 +17,10 @@ WriteMakefile(
         'Test::More' => 0,
 	'IO::File'   => 0,
     },
+    TEST_REQUIRES => {
+	'App::Ack'        => 0,
+        'Module::Version' => 0,
+    },
     PREREQ_PM => {
 	'App::Ack'        => 0,
 	'Data::Printer'   => 0,

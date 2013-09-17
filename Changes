@@ -1,7 +1,14 @@
 Revision history for Dependencies-Searcher
 
-0.05_02 2013-09-
+0.05_03 2013-09-17 07:51
  [FIXES]
+ - A pod error
+ - Add App::Ack and Module::Version to TEST_REQUIRES in Makefile.PL
+
+0.05_02 2013-09-16 22:11
+ [FIXES]
+ - get_modules() method rewriting, using IPC::Cmd, not exec() or system()
+ - Fix crash when not finding any use or require
  - Make the module more portable by using Cwd to get some dynamic path and avoid relative path problems
  [EHANCEMENTS]
  - Make Dependencies::Searcher using Dependencies::Searcher::AckRequester

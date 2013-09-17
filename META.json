@@ -1,5 +1,5 @@
 {
-   "abstract" : "Search recursively dependencies used in a module's directory",
+   "abstract" : "Manage your dependencies list in a convenient way",
    "author" : [
       "smonff <smonff@gmail.com>"
    ],
@@ -22,7 +22,9 @@
    "prereqs" : {
       "build" : {
          "requires" : {
+            "App::Ack" : "0",
             "IO::File" : "0",
+            "Module::Version" : "0",
             "Test::More" : "0"
          }
       },
@@ -43,5 +45,5 @@
       }
    },
    "release_status" : "testing",
-   "version" : "0.05_02"
+   "version" : "0.05_03"
 }

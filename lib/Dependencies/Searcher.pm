@@ -14,16 +14,34 @@ use Cwd;
 # Module::Version;
 # App::Ack;
 
-our $VERSION = '0.05_02';
+our $VERSION = '0.05_03';
 
 =head1 NAME
 
-Dependencies::Searcher - Search recursively dependencies used in a module's directory
-and build a report that can be used as a Carton cpanfile.
+Dependencies::Searcher - Manage your dependencies list in a convenient way
 
 =cut
 
 =head1 SYNOPSIS
+
+Search recursively dependencies used in a module's directory and build a report that 
+can be used as a Carton cpanfile.
+
+    use Dependencies::Searcher;
+
+    my $searcher = Dependencies::Searcher->new();
+    my @elements = $searcher->get_files();
+    my $path = $searcher->build_full_path(@elements);
+    my @uses = $searcher->get_modules($path, "use");
+    my @uniq_modules = $searcher->uniq(@uses);
+
+    $searcher->dissociate(@uniq_modules);
+
+    $searcher->generate_report($searcher->non_core_modules);
+
+=cut
+
+=head1 DESCRIPTION
 
 Maybe you don't want to have to list all the dependencies of your Perl application by
 hand and want an automated way to build it. Maybe you forgot to do it for a long time
@@ -43,18 +61,6 @@ This project has begun because it happens to me, and I don't want to search for 
 to install by hand, I just want to run a simple script that update the list in a simple
 way. It was much more longer to write the module than to search by hand but I wish it
 will be usefull for others.
-
-    use Dependencies::Searcher;
-
-    my $searcher = Dependencies::Searcher->new();
-    my @elements = $searcher->get_files();
-    my $path = $searcher->build_full_path(@elements);
-    my @uses = $searcher->get_modules($path, "use");
-    my @uniq_modules = $searcher->uniq(@uses);
-
-    $searcher->dissociate(@uniq_modules);
-
-    $searcher->generate_report($searcher->non_core_modules);
 
 =cut
 
