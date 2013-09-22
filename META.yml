@@ -23,8 +23,11 @@ no_index:
 requires:
   App::Ack: 0
   Data::Printer: 0
+  File::Stamped: 0
+  Log::Minimal: 0
+  Modle::CoreList: 2.99
   Module::Version: 0
   Moose: 0
   Test::More: 0
   perl: 5.010
-version: 0.05_03
+version: 0.05_04
