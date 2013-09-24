@@ -19,7 +19,7 @@ use File::Temp;
 # This module will be used throught a system call
 # App::Ack;
 
-our $VERSION = '0.05_05';
+our $VERSION = '0.05_06';
 
 =head1 NAME
 
@@ -443,13 +443,13 @@ https://github.com/smonff/dependencies-searcher/issues
 
 =over 2
 
-=item * Ajouter du log dans un fichier temporaire et tailer dessus pour avoir le debug pendant les tests avec https://metacpan.org/module/Log::Minimal et http://stackoverflow.com/questions/9922899/perl-system-command-redirection-to-log-files, 
+=item * Add log into a tmp file and use tail over it to get debug traces during tests and development. Using L<https://metacpan.org/module/Log::Minimal> et L<http://stackoverflow.com/questions/9922899/perl-system-command-redirection-to-log-files>, 
 
-=item * Implémenter Module::Corelist 2.99 pour bénéficier de is_corelist() 
+=item * Implement Module::Corelist 2.99 to get is_corelist() method 
 
-=item * Utiliser l'interface Perl de Module::Version
+=item * Use Module::Version's Perl interface
 
-=item * Bug "outdated" coremodule : si on a besoin d'un module "corelist" plus récent que celui qui est inclu dans la version de Perl installée sur le system
+=item * Bug "outdated" coremodule : if we need a "corelist" module that is a younger release than the one packed in the vanilla system Perl, this is bad...
 
 =back
 

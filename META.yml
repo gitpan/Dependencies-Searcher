@@ -30,4 +30,4 @@ requires:
   Moose: 0
   Test::More: 0
   perl: 5.010
-version: 0.05_05
+version: 0.05_06
