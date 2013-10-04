@@ -15,11 +15,14 @@ use Log::Minimal env_debug => 'LM_DEBUG';
 use File::Stamped;
 use IO::File;
 use File::Temp;
+use File::HomeDir;
+use File::Spec::Functions qw(catdir catfile);
+use Version::Compare;
 
 # This module will be used throught a system call
 # App::Ack;
 
-our $VERSION = '0.05_06';
+our $VERSION = '0.05_07';
 
 =head1 NAME
 
@@ -75,6 +78,16 @@ will be usefull for others.
 
 =cut
 
+=head1 WHY ISN'T IT JUST ANOTHER MODULE::SCANDEPS ?
+
+Module::ScanDeps is a bi-dimentional recursive scanner: it features dependencies and directories 
+recursivity.
+
+Dependencies::Searcher only found direct dependencies, not dependencies of dependencies,
+it scans recursively directories but not dependencies..
+
+=cut
+
 # Init parameters
 has 'non_core_modules' => (
     traits     => ['Array'],
@@ -99,17 +112,11 @@ has 'core_modules' => (
 );
 
 
-#  * * * * * * * * * * * * * * *
-
-#      L O G     S T U F F     *
-
-#  * * * * * * * * * * * * * * *
-
-$ENV{LM_DEBUG} = 1;
-my $tmp = '/tmp';
-
+# Log stuff here
+$ENV{LM_DEBUG} = 0; # 1 for debug logs, 0 for info
+my $work_path = File::HomeDir->my_data;
 my $log_fh = File::Stamped->new(
-    pattern => $tmp . "/dependencies-searcher.%Y-%m-%d.out",
+    pattern => catdir($work_path,  "dependencies-searcher.log.%Y-%m-%d.out"),
 );
 
 # Overrides Log::Minimal PRINT
@@ -119,34 +126,34 @@ $Log::Minimal::PRINT = sub {
 };
 
 debugf("Dependencies::Searcher 0.05_03 debugger init.");
-debugf("Log file available in /tmp");
-
-#  * * * * * * * * * * * * * * *
-
+debugf("Log file available in " . $work_path);
+# End of log init
 
 sub get_modules {
     my ($self, $pattern, @path) = @_;
 
-    # @path;
-    #p $pattern;
-
-    debugf("Coucou");
+    debugf("Ack pattern : " . $pattern);
 
     my $ack_requester = Dependencies::Searcher::AckRequester->new();
 
-    my @moduls;
-
     my @params = ('--perl', '-hi', $pattern, @path);
+    foreach my $param (@params) {
+	debugf("Param : " . $param);
+    }
 
     my $requester = Dependencies::Searcher::AckRequester->new();
     my $ack_path = $requester->get_path();
+    debugf("Ack path : " . $ack_path);
     my $cmd_use = $requester->build_cmd(@params);
-    @moduls = $requester->ack($cmd_use);
+
+    my @moduls = $requester->ack($cmd_use);
+    infof("Found $pattern modules : " . @moduls);
 
     if ( defined $moduls[0]) {
 	if ($moduls[0] =~ m/^use/ or $moduls[0] =~ m/^require/) {
 	    return @moduls;
 	} else {
+	    critf("Failed to retrieve modules with Ack");
 	    die "Failed to retrieve modules with Ack";
 	}
     } else {
@@ -198,13 +205,16 @@ sub build_full_path {
     return $path;
 }
 
+# Generate a "1" when merging if one of both is empty
+# Will be clean in make_it_real method
 sub merge_dependencies {
     my ($self, @uses, @requires) = @_;
     my @merged_dependencies = (@uses, @requires);
+    infof("Merged use and require dependencies");
     return @merged_dependencies;
 }
 
-# Remove special cases
+# Remove special cases that aren't need at all
 sub make_it_real {
     my ($self, @merged) = @_;
     my @real_modules;
@@ -212,21 +222,24 @@ sub make_it_real {
 	push(@real_modules, $module) unless
 
 	$module =~ m/say/
-	# Contains qw()
-	or $module =~ m/qw\(\)/
+
 	# Describes a minimal Perl version
 	or $module =~ m/^use\s[0-9]\.[0-9]+?/
 	or $module =~ m/^use\sautodie?/
-	or $module =~ m/^use\sautodie?/;
+	or $module =~ m/^use\swarnings/
+	or $module =~ m/^1$/
+	or $module =~ m/^use\sDependencies::Searcher/;
     }
     return @real_modules;
 }
 
-
+# Clean correct lines that can't be removed
 sub clean_everything {
     my @clean_modules = ();
     my ($self, @dirty_modules) = @_;
     foreach my $module ( @dirty_modules ) {
+
+	debugf("Dirty module : " . $module);
 
 	# remove the 'use' and the space next
 	$module =~ s/use\s//i;
@@ -234,13 +247,18 @@ sub clean_everything {
 	# remove the 'require', quotes and the space next
 	# but returns the captured module name (non-greedy)
 	$module =~ s/requires\s'(.*?)'/$1/i;
-	                                  # i = not case-sensitive
+	                                    # i = not case-sensitive
 	# Remove the ';' at the end of the line
 	$module =~ s/;//i;
 
-	# Remove any qw(xxxx)
-	# BUG, should remove spaces
-	$module =~ s/\sqw\([A-Za-z]+\)//i;
+	# Remove any qw(xxxxx xxxxx) or qw[xxx xxxxx]
+	# '\(' are for real 'qw()' parenthesis not for grouping
+	# Also removes empty qw()
+	$module =~ s/\sqw\(([A-Za-z]+(\s*[A-Za-z]*))*\)//i;
+	$module =~ s/\sqw\[([A-Za-z]+(_[A-Za-z]+)*(\s*[A-Za-z]*))*\]//i;
+
+	# Remove method names between quotes (those that can be used without class instantiation)
+	$module =~ s/\s'[A-Za-z]+(_[A-Za-z]+)*'//i;
 
 	# Remove dirty bases and quotes.
 	# This regex that substitute My::Module::Name
@@ -255,6 +273,11 @@ sub clean_everything {
 	# http://stackoverflow.com/questions/82064/a-regex-for-version-number-parsing
 	$module =~ s/\s(\*|\d+(\.\d+){0,2}(\.\*)?)$//;
 
+	# Remove configuration stuff like env_debug => 'LM_DEBUG' but the quoted words
+	# have been removed before 
+	$module =~ s/\s([A-Za-z]+(_[A-Za-z]+)*(\s*[A-Za-z]*))*\s=>//i;
+
+	debugf("Clean module : " . $module);
 	push @clean_modules, $module;
     }
     return @clean_modules;
@@ -267,26 +290,21 @@ sub uniq {
     my %seen = ();
     foreach my $element ( @many_modules ) {
 	next if $seen{ $element }++;
+	debugf("Uniq element added : " . $element);
 	push @unique_modules, $element;
     }
     return @unique_modules;
 }
 
-
-#
-# BUG !!! https://github.com/smonff/dependencies-searcher/issues/25
-#
-# Recent versions of corelist modules are not in corelist but this code portion acts just like it would
-#
 sub dissociate {
     my ($self, @common_modules) = @_;
 
     foreach my $nc_module (@common_modules) {
 
+	# The old way before 2.99 corelist
 	# my $core_list_answer = `corelist $nc_module`;
-	my $core_list_answer = Module::CoreList::is_core($nc_module);
 
-	# debugf("$nc_module version : " .  $Module::CoreList::version{ $] }{"$nc_module"});
+	my $core_list_answer = Module::CoreList::is_core($nc_module);
 
 	# print "Found " . $nc_module;
 	if (
@@ -295,6 +313,32 @@ sub dissociate {
 	    # In case module don't have a version number
 	    ($core_list_answer == 1)
 	) {
+
+	    # A module can be in core but the wanted version can be more fresh than the core one...
+	    # Return the most recent version
+	    my $mversion_version = get_version($nc_module);
+	    # Return the corelist version
+	    my $corelist_version = $Module::CoreList::version{ $] }{"$nc_module"};
+
+	    debugf("Mversion version : " . $mversion_version);
+	    debugf("Corelist version : " . $corelist_version);
+
+	    # Version::Compare warns about versions numbers with '_' are 'non-numeric values'
+	    $corelist_version =~ s/_/./;
+	    $mversion_version =~ s/_/./;
+
+	    # It's a fix for this bug https://github.com/smonff/dependencies-searcher/issues/25
+	    # Recent versions of corelist modules are not include in all Perl versions corelist
+	    if (&Version::Compare::version_compare($mversion_version, $corelist_version) == 1) {
+		infof(
+		    $nc_module . " version " . $mversion_version . " is in use but  " .
+		    $corelist_version . " is in core list"
+		);
+		$self->add_non_core_module($nc_module);
+		infof($nc_module . " is in core but has been added to non core because it's a fresh core");
+		next;
+	    }
+
 	    # Add to core_module
 
 	    # The old way
@@ -305,9 +349,11 @@ sub dissociate {
 	    # The "Moose" trait way
 	    # https://metacpan.org/module/Moose::Meta::Attribute::Native::Trait::Array
 	    $self->add_core_module($nc_module);
+	    infof($nc_module . " is core");
 
 	} else {
 	    $self->add_non_core_module($nc_module);
+	    infof($nc_module . " is not in core");
 	    # push @{ $self->non_core_modules }, $nc_module;
 	}
     }
@@ -323,8 +369,7 @@ sub generate_report {
     foreach my $module_name ( @{$self->non_core_modules} ) {
 
 	my $version = get_version($module_name);
-	debugf($module_name);
-	debugf $version;
+	debugf("Module + version : " . $module_name . " " . $version);
 
 	# if not undef
 	if ($version) {
@@ -343,14 +388,11 @@ sub generate_report {
     close $cpanfile_fh;
 }
 
-debugf("-------------  END  -------------");
+1;
 
-#sub logm {
-    #my $data = shift;
+__END__
 
-    #open my $log_file, '>>', './t/logs.out';
-    #say $log_file }
-
+=pod
 
 =head1 SUBROUTINES/METHODS
 
@@ -482,6 +524,15 @@ L<http://search.cpan.org/dist/Dependencies-Searcher/>
 
 =back
 
+=head1 Contributors
+
+=over
+
+=item * Nikolay Mishin (mishin) makes it more cross-platform
+
+=back
+
+=cut
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -534,4 +585,4 @@ See L<http://dev.perl.org/licenses/> for more information.
 
 =cut
 
-1; # End of Dependencies::Searcher
+
