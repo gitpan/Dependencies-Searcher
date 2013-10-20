@@ -1,10 +1,10 @@
 {
-   "abstract" : "Manage your dependencies list in a convenient way",
+   "abstract" : "Search recursively dependencies used in a module's directory and build a report that can be used as a L<Carton> cpanfile.",
    "author" : [
       "smonff <smonff@gmail.com>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.74, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.8, CPAN::Meta::Converter version 2.132830",
    "license" : [
       "perl_5"
    ],
@@ -54,5 +54,5 @@
       }
    },
    "release_status" : "testing",
-   "version" : "0.05_07"
+   "version" : "0.05_08"
 }

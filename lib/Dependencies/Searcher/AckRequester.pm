@@ -59,14 +59,19 @@ sub build_cmd {
     return $cmd_href;
 }
 
-# This is VERY DIRTY AND BAD stuff
-# Have to to it in a better way...
-# Maybe use IPC::System::Simple
+# Maybe this is not very clean, but it works (except on MS Windows)
 sub ack {
-
     my ($self, $cmd) = @_;
-
-    my($success, $error_message, $full_buffer, $stdout_buffer, $stderr_buffer) = run( command => $cmd, verbose => 0 );
+    my (
+	$success,
+	$error_message,
+	$full_buffer,
+	$stdout_buffer,
+	$stderr_buffer
+    ) = run (
+	command => $cmd,
+	verbose => 0
+    );
 
     my @modules;
 
@@ -89,44 +94,101 @@ __END__
 
 =head1 NAME
 
-Dependencies::Searcher::AckRequester - Helps DependenciesSearcher to use Ack
+Dependencies::Searcher::AckRequester - Helps Dependencies::Searcher to use Ack
 
 =cut
 
 =head1 SYNOPSIS
 
-A nice code example
+    my $requester = Dependencies::Searcher::AckRequester->new();
+
+    # Places to search...
+    my @path = ("./lib", "./Makefile.PL", "./script");
+
+    # Params for Ack
+    my @params = ('--perl', '-hi', $pattern, @path);
+
+    # Absolute path to the Ack binary
+    my $ack_path = $requester->get_path();
+
+    # Build the command for IPC::Cmd
+    my $cmd_use = $requester->build_cmd(@params);
+
+    # Execute the command and retrieve the output
+    my @moduls = $requester->ack($cmd_use);
+
+=head1 DESCRIPTION
+
+This module use L<ack> through a system command to search recursively for
+patterns. It use L<IPC::Cmd> as a layer between the module and L<ack>, that
+execute and retrieve the command output.
+
+It also builds the command itself (path and arguments). Arguments are
+stored into an array, because it is too much dangerous to build a
+command with strings (space problems are one reason among others).
+
+It's not made to be used independantly from Dependencies::Searcher
+(mean it's not supposed to be used directly into your programs, but
+you can try if you want...)
 
 =head1 SUBROUTINES/METHODS
 
-This is work in progress...
-
 =head2 get_path()
 
-Returns the Ack full path if installed. It will be used by ICP::Cmd.
+Returns the L<ack> full path if installed. Set the C<full_path>
+L<Moose> attribute that will be used by ICP::Cmd. It verify also that
+L<Ack> is reachable or warns about it.
 
 =cut
 
-=head2 build_cmd()
+=head2 build_cmd(@params)
+
+C<build_cmd()> takes as parameter all the arguments Ack will
+need. L<Dependencies::Searcher> defines it like this :
+
+=over4
+
+=item * C<--perl>   : tells to search in Perl like files (C<*.pm>, C<*.pl>, etc.) 
+
+=item * C<-hi>      : suppress the prefixing filename on output + ignore
+case
+
+=item * C<$pattern> : must be passed from your implementation
+
+=item * C<@path>    : files and directories where L<ack> will go 
+
+All these params are merged in an only array ref that is returned for
+later use with L<IPC::Cmd>.
+
+=back
 
 =cut
 
-=head2 ack()
+=head2 ack($params_array_ref)
 
-Returns an array of potentially interesting lines, containing dependencies names 
+Execute the L<IPC::Cmd> command that calls C<ack> and returns an array of
+potentially interesting lines, containing dependencies names but some
+crap inside too.
 
 =cut
+
+=head1 CAVEATS
+
+Win32 and Cygwin platforms aren't supported.
+
+=head1 BUGS
+
+Please report any bugs or feature requests to
+C<bug-dependencies-searcher  at rt.cpan.org>, or through the web
+interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Dependencies-Searcher>.
+I will be notified, and then you'll automatically be notified of
+progress on your bug as I make changes.
+
+=head1 TODOs
 
 =head1 AUTHOR
 
 smonff, C<< <smonff at gmail.com> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-dependencies-searcher at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Dependencies-Searcher>.  I will be notified, and then you'll automatically be notified of progress on your bug as I make changes.
-
-=head1 TODOs
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -134,8 +196,10 @@ the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Dependenci
 
 =item * Andy Lester's Ack
 
-I've use it as the main source for the module. It was pure Perl so I've choose 
-it, even if Ack is not meant for being used programatically, this use do the
+Ack gives me the wish to try to write this module. It was pure Perl so
+I've choose it because it was possible to install it through CPAN
+during the distribution installation process. Even if Ack was not
+meant for being used programatically, this hacked use of Ack do the
 job.
 
 See L<http://beyondgrep.com/>
