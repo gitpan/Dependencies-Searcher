@@ -10,21 +10,21 @@ use autodie;
 use Moose;
 use IPC::Cmd qw[can_run run];
 use Dependencies::Searcher::AckRequester;
-use Cwd;
 use Log::Minimal env_debug => 'LM_DEBUG';
 use File::Stamped;
 use IO::File;
-use File::Temp;
 use File::HomeDir;
 use File::Spec::Functions qw(catdir catfile);
 use Version::Compare;
+use Path::Class;
+use ExtUtils::Installed;
 
-our $VERSION = '0.05_08';
+our $VERSION = '0.05_09';
 
 =head1 NAME
 
 Dependencies::Searcher - Search recursively dependencies used in a
-module's directory and build a report that can be used as a L<Carton>
+module's directory and build a report that can be used as a L<Carton|Carton>
 cpanfile.
 
 =cut
@@ -55,17 +55,17 @@ cpanfile.
 Maybe you don't want to have to list all the dependencies of your Perl
 application by hand and want an automated way to build it. Maybe you
 forgot to do it for a long time ago. Or just during a short period.
-Anyway, you've add lots of CPAN modules. L<Carton> is here to help you
+Anyway, you've add lots of CPAN modules. L<Carton|Carton> is here to help you
 manage dependencies between your development environment and
 production, but how to keep track of the list of modules you will pass
-to L<Carton>?
+to L<Carton|Carton>?
 
 Event if it is a no brainer to keep track of this list, it can be much
 better not to have to do it.
 
 You will need a tool that will check for any 'requires' or 'use' in
 your module package, and report it into a file that could be used as a
-L<Carton> cpanfile. Any duplicated entry will be removed and modules
+L<Carton|Carton> cpanfile. Any duplicated entry will be removed and modules
 versions will be checked and made available. Core modules will be
 ommited because you don't need to install them (except in some special
 case, see C<dissociate()> documentation).
@@ -141,6 +141,12 @@ sub get_modules {
 
     debugf("Ack pattern : " . $pattern);
 
+    # The regex add the terminal semicolon at the end of the line to
+    # make the difference between comments and code, because "use" is
+    # a word that you can find often in a POD section, more much in
+    # the beginning of line than you could think
+    $pattern = "$pattern" . qr/.+;$/;
+
     my @params = ('--perl', '-hi', $pattern, @path);
     foreach my $param (@params) {
 	debugf("Param : " . $param);
@@ -169,30 +175,30 @@ sub get_modules {
 
 sub get_files {
     my $self = shift;
-    # This prefix will allow a more portable module
-    my $prefix = getcwd();
+    # Path::Class  allows a more portable module
+    my $lib_dir = dir('lib');
+    my $make_file = file('Makefile.PL');
+    my $script_dir = dir('script');
 
     my @structure;
     $structure[0] = "";
     $structure[1] = "";
     $structure[2] = "";
-    if (-d $prefix."/lib") {
+    if (-d $lib_dir) {
 
-	$structure[0] = $prefix."/lib";
+	$structure[0] = $lib_dir;
+
     } else {
-	#
-	# TEST IF THE PATH IS OK ???
-	#
-	#
+	# TODO TEST IF THE PATH IS OK ???
 	die "Don't look like we are working on a Perl module";
     }
 
-    if (-f $prefix."/Makefile.PL") {
-	$structure[1] = $prefix."/Makefile.PL";
+    if (-f $make_file) {
+	$structure[1] = $make_file;
     }
 
-    if (-d $prefix."/script") {
-	$structure[2] = $prefix."/script";
+    if (-d $script_dir) {
+	$structure[2] = $script_dir;
     }
 
     return @structure;
@@ -238,43 +244,92 @@ sub clean_everything {
 	debugf("Dirty module : " . $module);
 
 	# remove the 'use' and the space next
-	$module =~ s/use\s//i;
+	$module =~ s{
+			use \s
+		}
+		    {}xi; # Empty subtitution
 
-	# remove the 'require', quotes and the space next
+	# remove the require, quotes and the space next
 	# but returns the captured module name (non-greedy)
 	# i = not case-sensitive
-	$module =~ s/requires\s'(.*?)'/$1/i;
+	$module =~ s{
+			requires \s
+			'
+			(.*?)
+			'
+		}{ $1 }xi;
 
 	# Remove the ';' at the end of the line
-	$module =~ s/;//i;
+	$module =~ s/ ; //xi;
 
 	# Remove any qw(xxxxx xxxxx) or qw[xxx xxxxx]
 	# '\(' are for real 'qw()' parenthesis not for grouping
 	# Also removes empty qw()
-	$module =~ s/\sqw\(([A-Za-z]+(\s*[A-Za-z]*))*\)//i;
-	$module =~ s/\sqw\[([A-Za-z]+(_[A-Za-z]+)*(\s*[A-Za-z]*))*\]//i;
+	$module =~ s{
+			\s qw
+			\(
+			([A-Za-z]+(\s*[A-Za-z]*))*
+			\)
+		}{}xi;
+	$module =~ s{
+			\s qw
+			\[
+			([A-Za-z]+(_[A-Za-z]+)*(\s*[A-Za-z]*))*
+			\]
+		}
+		    {}xi; # Empty subtitution
 
 	# Remove method names between quotes (those that can be used
 	# without class instantiation)
-	$module =~ s/\s'[A-Za-z]+(_[A-Za-z]+)*'//i;
+	$module =~ s{
+			\s
+			'
+			[A-Za-z]+(_[A-Za-z]+)*
+			'
+		}
+		    {}xi; # Empty subtitution
 
 	# Remove dirty bases and quotes.
 	# This regex that substitute My::Module::Name
 	# to a "base 'My::Module::Name'" by capturing
 	# the name in a non-greedy way
-	$module =~ s/base\s'(.*?)'/$1/i;
+	$module =~ s{
+			base \s
+			'
+			(.*?)
+			'
+		}
+		    {$1}xi;
 
 	# Remove some warning sugar
-	$module =~ s/([a-z]+)\sFATAL\s=>\s'all'/$1/i;
+	$module =~ s{
+			([a-z]+)
+			\s FATAL
+			\s =>
+			\s 'all'
+		}
+		    {$1}xi;
 
 	# Remove version numbers
 	# See "a-regex-for-version-number-parsing" :
 	# http://stackoverflow.com/questions/82064/
-	$module =~ s/\s(\*|\d+(\.\d+){0,2}(\.\*)?)$//;
+	$module =~ s{
+			\s
+			(\*|\d+(\.\d+)
+			    {0,2}
+			    (\.\*)?)$
+		}
+		    {}x;
 
 	# Remove configuration stuff like env_debug => 'LM_DEBUG' but
 	# the quoted words have been removed before
-	$module =~ s/\s([A-Za-z]+(_[A-Za-z]+)*(\s*[A-Za-z]*))*\s=>//i;
+	$module =~ s{
+			\s
+			([A-Za-z]+(_[A-Za-z]+)*( \s*[A-Za-z]*))*
+			\s
+			=>
+		}
+		    {}xi;
 
 	debugf("Clean module : " . $module);
 	push @clean_modules, $module;
@@ -375,7 +430,13 @@ sub generate_report {
 
     my $self = shift;
 
-    open my $cpanfile_fh, '>', 'cpanfile';
+    #
+    # TODO !!! Check if the module is installed already with
+    # ExtUtils::Installed. If it it not, cry that
+    # Dependencies::Searcher is designed to be used in the complete env
+    #
+
+    open my $cpanfile_fh, '>', 'cpanfile' or die "Can't open cpanfile : $:!";
 
     foreach my $module_name ( @{$self->non_core_modules} ) {
 
@@ -444,7 +505,9 @@ These patterns should be C<^use> or C<^require>.
 
 Then, Ack will be used to retrieve modules names into lines containing
 patterns and return them into an array (containing also some dirt).
-See L<Dependencies::Searcher::AckRequester> for more informations.
+See
+L<Dependencies::Searcher::AckRequester|Dependencies::Searcher::AckRequester>
+for more informations.
 
 =cut
 
@@ -494,22 +557,22 @@ version if the module is from Perl core or not. Note that results can
 be different according to the environment.
 
 More, B<you can have two versions of the same module installed on your
-environment> (even if you use L<local::lib> when you install a recent
-version of a file that has been integrated into Perl core (this
-version hasn't necessary been merged into core).
+environment> (even if you use L<local::lib|local::lib> when you
+install a recent version of a file that has been integrated into Perl
+core (this version hasn't necessary been merged into core).
 
 So C<dissociate()> checks both and compares it, to be sure that the found core
 module is the "integrated" version, not a fresh one that you have
 installed yourself. If it is fresh, the module is considered as a I<non-core>.
 
 This method don't return anything, but it stores found dependencies on the two
-C<core_modules> and C<non_core_modules> L<Moose> attributes arrays.
+C<core_modules> and C<non_core_modules> L<Moose|Moose> attributes arrays.
 
 =cut
 
 =head2 generate_report()
 
-Generate the C<cpanfile> for L<Carton>, based on data contained into
+Generate the C<cpanfile> for L<Carton|Carton>, based on data contained into
 C<core_modules> and C<non_core_modules> attributes, with optionnal
 version number (if version number can't be found, dependency name is
 print alone).
@@ -528,10 +591,11 @@ for more informations.
 =head1 LOGGING AND DEBUGGING
 
 This module has a very convenient logging system that use
-L<Log::Minimal> and L<File::Stamped> to write to a file that you will
-find in the directory where local applications should store their
-internal data for the current user. This is totally portable (Thanks
-to Nikolay Mishin (mishin)). For exemple, on a Debian-like OS :
+L<Log::Minimal|Log::Minimal> and L<File::Stamped|File::Stamped> to
+write to a file that you will find in the directory where local
+applications should store their internal data for the current
+user. This is totally portable (Thanks to Nikolay Mishin
+(mishin)). For exemple, on a Debian-like OS :
 
     ~/.local/share/dependencies-searcher.[y-M-d].out
 
@@ -540,7 +604,7 @@ To debug and use these logs :
     $ tail -vf ~/local/share/dependencies-searcher.[y-M-d].out
 
 For more information on how to configure log level, read
-L<Log::Minimal> documentation.
+L<Log::Minimal|Log::Minimal> documentation.
 
 =head1 CAVEATS
 
@@ -575,8 +639,6 @@ progress on your bug as I make changes.
 
 Most of the time, todos and features are on Github and Questub. 
 See https://github.com/smonff/dependencies-searcher/issues
-
-=back
 
 =head1 SUPPORT
 
@@ -626,14 +688,14 @@ smonff, C<< <smonff at gmail.com> >>
 
 =over
 
-=item * Brian D. Foy's Module::Extract::Use
+=item * Brian D. Foy's L<Module::Extract::Use|Module::Extract::Use>
 
 Was the main inspiration for this one. First, I want to use it for my needs
 but it was not recursive...
 
 See L<https://metacpan.org/module/Module::Extract::Use>
 
-=item * Module::CoreList
+=item * L<Module::CoreList|Module::CoreList>
 
 What modules shipped with versions of perl. I use it extensively to detect
 if the module is from Perl Core or not.
