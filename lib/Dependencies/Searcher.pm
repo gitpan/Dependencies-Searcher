@@ -19,7 +19,7 @@ use Version::Compare;
 use Path::Class;
 use ExtUtils::Installed;
 
-our $VERSION = '0.05_09';
+our $VERSION = '0.05_10';
 
 =head1 NAME
 
@@ -156,6 +156,7 @@ sub get_modules {
 
     my $ack_path = $requester->get_path();
     debugf("Ack path : " . $ack_path);
+
     my $cmd_use = $requester->build_cmd(@params);
 
     my @moduls = $requester->ack($cmd_use);
@@ -506,7 +507,7 @@ These patterns should be C<^use> or C<^require>.
 Then, Ack will be used to retrieve modules names into lines containing
 patterns and return them into an array (containing also some dirt).
 See
-L<Dependencies::Searcher::AckRequester|Dependencies::Searcher::AckRequester>
+L<https://metacpan.org/pod/release/SMONF/Dependencies-Searcher-0.05_09/lib/Dependencies/Searcher/AckRequester.pm|Dependencies::Searcher::AckRequester>
 for more informations.
 
 =cut
