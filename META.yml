@@ -3,7 +3,7 @@ abstract: "Search recursively dependencies used in a module's directory and buil
 author:
   - 'smonff <smonff@gmail.com>'
 build_requires:
-  App::Ack: 0
+  App::Ack: 2.1
   IO::File: 0
   Module::Version: 0
   Test::More: 0
@@ -38,4 +38,4 @@ requires:
   Test::More: 0
   Version::Compare: 0.14
   perl: 5.010
-version: 0.05_10
+version: 0.05_11

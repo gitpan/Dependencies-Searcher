@@ -22,7 +22,7 @@
    "prereqs" : {
       "build" : {
          "requires" : {
-            "App::Ack" : "0",
+            "App::Ack" : "2.1",
             "IO::File" : "0",
             "Module::Version" : "0",
             "Test::More" : "0",
@@ -56,5 +56,5 @@
       }
    },
    "release_status" : "testing",
-   "version" : "0.05_10"
+   "version" : "0.05_11"
 }
