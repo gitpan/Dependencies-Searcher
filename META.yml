@@ -38,4 +38,4 @@ requires:
   Test::More: 0
   Version::Compare: 0.14
   perl: 5.010
-version: 0.062
+version: 0.063
