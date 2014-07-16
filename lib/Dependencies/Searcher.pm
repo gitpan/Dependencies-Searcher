@@ -19,13 +19,13 @@ use Version::Compare;
 use Path::Class;
 use ExtUtils::Installed;
 
-our $VERSION = '0.063';
+our $VERSION = '0.064';
 
 =head1 NAME
 
-Dependencies::Searcher - Search recursively dependencies used in a
-module's directory and build a report that can be used as a L<Carton|Carton>
-cpanfile.
+Dependencies::Searcher - Search for modules used or required by a
+distribution and build a report that can be used as L<Carton|Carton>
+cpanfile .
 
 =cut
 
@@ -42,11 +42,11 @@ cpanfile.
 
     $searcher->generate_report($searcher->non_core_modules);
 
-    # Prints
-    # requires Data::Printer, 0.35
-    # requires Moose, 2.0602
-    # requires IPC::Cmd
-    # requires Module::Version
+    # Prints to cpanfile
+    # requires 'Data::Printer', '0.35';
+    # requires Moose, '2.0602';
+    # requires IPC::Cmd;
+    # requires Module::Version;
     # ...
 
 =cut
@@ -277,7 +277,7 @@ sub clean_everything {
 	$module =~ s{
 			\s qw
 			\(
-			([A-Za-z]+(\s*[A-Za-z]*))*
+			(\s*[A-Za-z]+(\s*[A-Za-z]*))*\s*
 			\)
 		}{}xi;
 	$module =~ s{
@@ -285,6 +285,14 @@ sub clean_everything {
 			\[
 			([A-Za-z]+(_[A-Za-z]+)*(\s*[A-Za-z]*))*
 			\]
+		}
+		    {}xi; # Empty subtitution
+
+	$module =~ s{
+			\s qw
+			\/
+			(\s[A-Za-z]+(_[A-Za-z]+)*(\s*[A-Za-z]*))*\s
+			\/
 		}
 		    {}xi; # Empty subtitution
 
@@ -730,6 +738,8 @@ See also :
 =item * https://metacpan.org/module/Perl::PrereqScanner
 
 =item * http://stackoverflow.com/questions/17771725/
+
+=item * https://metacpan.org/module/Dist::Zilla::Plugin::AutoPrereqs
 
 =back
 

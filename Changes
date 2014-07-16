@@ -1,5 +1,12 @@
 Revision history for Dependencies-Searcher
 
+0.64
+ [FIX]
+ - Fix some "qw/ xxx /" and "qw( xxx )" that weren't cleaned
+ [EHANCEMENT]
+ - Add a link to Dist::Zilla::Plugin::AutoPrereqs in the SEE ALSO section 
+   thanks to dolmen
+
 0.063 2014-02-16 19:29
  [FIX]
  - Fix #48 : some tests fails because we use modules that where supposed

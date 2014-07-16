@@ -26,6 +26,8 @@ my @dirty_modules = (
     "use File::Spec::Functions qw(catdir catfile);",
     "use strict;",
     "use ExtUtils::MakeMaker;",
+    "use Regexp::Common qw/ URI /;",
+    "use Coro qw( async );",
 );
 
 my @special_cases = ();
@@ -39,11 +41,15 @@ for my $dirty_module (@dirty_modules) {
     like $dirty_module, qr/ ; /x, "Line should contain ;";
 }
 
+like $dirty_modules[22], qr/ \s qw \/ (\s*[A-Za-z]+(\s*[A-Za-z]*))* \s*\/ /x, "Line should contain a qw/ x /";
+like $dirty_modules[23], qr/ \s qw \( (\s*[A-Za-z]+(\s*[A-Za-z]*))* \s*\) /x, "Line should contain a qw( x )";
+
 my @clean_modules = $searcher->clean_everything(@dirty_modules);
 
 for my $module (@clean_modules) {
     unlike $module, qr/use \s /x, "Line should not contain any 'use '";
     unlike $module, qr/requires \s ' (.*?) '/x, "Line should not contain any 'require \'Mod::Name\''";
     unlike $module, qr/ ; /x, "Line should not contain any ;";
-    unlike $module, qr/ \s qw \( ([A-Za-z]+(\s*[A-Za-z]*))* \) /x, "Line should not contain any qw()";
+    unlike $module, qr/ \s qw \/ (\s*[A-Za-z]+(\s*[A-Za-z]*))* \s*\/ /x, "Line should not contain any qw/ x /";
+    unlike $module, qr/ \s qw \( (\s*[A-Za-z]+(\s*[A-Za-z]*))* \s*\) /x, "Line should not contain any qw( x )";
 }

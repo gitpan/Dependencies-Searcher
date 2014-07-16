@@ -1,5 +1,5 @@
 ---
-abstract: "Search recursively dependencies used in a module's directory and build a report that can be used as a L<Carton|Carton> cpanfile."
+abstract: 'Search for modules used or required by a distribution and build a report that can be used as L<Carton|Carton> cpanfile .'
 author:
   - 'smonff <smonff@gmail.com>'
 build_requires:
@@ -38,4 +38,4 @@ requires:
   Test::More: 0
   Version::Compare: 0.14
   perl: 5.010
-version: 0.063
+version: 0.064

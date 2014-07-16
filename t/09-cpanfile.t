@@ -15,7 +15,7 @@ my @non_core_modules = (
     "Acme::Bleach",
     "Acme::Pony",
     "Bone::Easy",
-    "Tie::Hash::Cannabinol"
+    "Tie::Hash::Cannabinol",
 );
 
 my @bug = (
